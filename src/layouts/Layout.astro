@@ -1,0 +1,112 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+}
+
+const { 
+  title = "Meine Rezept-Sammlung", 
+  description = "Moderne, durchsuchbare Rezept-Sammlung aus Google Keep mit dynamischer Zutatenskalierung und interaktiven Koch-Checklisten.",
+  image
+} = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+---
+
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href={`${baseUrl}/favicon.svg`} />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title} | Rezepte</title>
+    <meta name="description" content={description} />
+
+    <!-- OpenGraph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {image && <meta property="og:image" content={image} />}
+
+    <script is:inline>
+      // Initial theme detection
+      const theme = (() => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+          return localStorage.getItem('theme');
+        }
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+        return 'light';
+      })();
+      document.documentElement.setAttribute('data-theme', theme);
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a href={`${baseUrl}/`} class="brand-logo">
+          <div class="brand-icon">🍳</div>
+          <span>Rezepte</span>
+        </a>
+
+        <nav class="nav-links">
+          <a href={`${baseUrl}/`} class="nav-link">Übersicht</a>
+          <a href={`${baseUrl}/categories/hauptspeise`} class="nav-link">Hauptspeisen</a>
+          <a href={`${baseUrl}/categories/dessert`} class="nav-link">Desserts</a>
+          <a href={`${baseUrl}/categories/dips-saucen`} class="nav-link">Dips & Saucen</a>
+          <a href={`${baseUrl}/categories/brot-gebaeck`} class="nav-link">Brot & Gebäck</a>
+        </nav>
+
+        <div class="header-actions">
+          <button id="themeToggle" class="theme-toggle-btn" aria-label="Dark Mode umschalten">
+            <span class="theme-icon-light">☀️</span>
+            <span class="theme-icon-dark" style="display:none;">🌙</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>© {new Date().getFullYear()} Rezepte • Importiert aus Google Keep • GitHub Pages Edition</p>
+      </div>
+    </footer>
+
+    <script>
+      const toggleBtn = document.getElementById('themeToggle');
+      const lightIcon = toggleBtn?.querySelector('.theme-icon-light') as HTMLElement;
+      const darkIcon = toggleBtn?.querySelector('.theme-icon-dark') as HTMLElement;
+
+      function updateIcons(currentTheme: string) {
+        if (currentTheme === 'dark') {
+          if (lightIcon) lightIcon.style.display = 'none';
+          if (darkIcon) darkIcon.style.display = 'inline';
+        } else {
+          if (lightIcon) lightIcon.style.display = 'inline';
+          if (darkIcon) darkIcon.style.display = 'none';
+        }
+      }
+
+      const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+      updateIcons(initialTheme);
+
+      toggleBtn?.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateIcons(newTheme);
+      });
+    </script>
+  </body>
+</html>

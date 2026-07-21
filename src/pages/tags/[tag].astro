@@ -1,0 +1,83 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import RecipeCard from '../../components/RecipeCard.astro';
+
+function slugifyTag(tag: string) {
+  return tag
+    .toLowerCase()
+    .trim()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export async function getStaticPaths() {
+  const allRecipes = await getCollection('recipes');
+  
+  function slugify(tag: string) {
+    return tag
+      .toLowerCase()
+      .trim()
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  const tagMap = new Map();
+  allRecipes.forEach(recipe => {
+    (recipe.data.tags || []).forEach(tag => {
+      const slug = slugify(tag);
+      if (!slug) return;
+      if (!tagMap.has(slug)) {
+        tagMap.set(slug, { tagName: tag, recipes: [] });
+      }
+      tagMap.get(slug).recipes.push(recipe);
+    });
+  });
+
+  return Array.from(tagMap.entries()).map(([slug, { tagName, recipes }]) => ({
+    params: { tag: slug },
+    props: { tagName, recipes },
+  }));
+}
+
+const { tagName, recipes } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+recipes.sort((a, b) => a.data.title.localeCompare(b.data.title));
+---
+
+<Layout title={`Tag: #${tagName}`}>
+  <section class="container" style="padding: 3rem 1.5rem 4rem;">
+    <nav class="breadcrumb" style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--color-text-muted);">
+      <a href={`${baseUrl}/`}>Rezepte</a> &gt; <span>Tag: #{tagName}</span>
+    </nav>
+
+    <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">#{tagName} ({recipes.length})</h1>
+    <p style="color: var(--color-text-muted); margin-bottom: 2rem;">
+      Alle Rezepte mit dem Schlagwort #{tagName}.
+    </p>
+
+    <div class="recipe-grid">
+      {recipes.map(recipe => (
+        <RecipeCard 
+          title={recipe.data.title}
+          slug={recipe.slug}
+          category={recipe.data.category}
+          tags={recipe.data.tags}
+          servings={recipe.data.servings}
+          prepTime={recipe.data.prepTime}
+          cookTime={recipe.data.cookTime}
+          image={recipe.data.image}
+        />
+      ))}
+    </div>
+  </section>
+</Layout>

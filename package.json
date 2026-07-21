@@ -1,0 +1,16 @@
+{
+  "name": "rezepte",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build && npx pagefind --site dist",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "devDependencies": {
+    "astro": "^4.16.18",
+    "pagefind": "^1.3.0"
+  }
+}
