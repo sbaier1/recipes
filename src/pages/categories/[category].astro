@@ -1,0 +1,81 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import RecipeCard from '../../components/RecipeCard.astro';
+
+function slugifyCategory(cat: string) {
+  return cat
+    .toLowerCase()
+    .trim()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export async function getStaticPaths() {
+  const allRecipes = await getCollection('recipes');
+  
+  function slugify(cat: string) {
+    return cat
+      .toLowerCase()
+      .trim()
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  const categoryMap = new Map();
+  allRecipes.forEach(recipe => {
+    const cat = recipe.data.category;
+    const slug = slugify(cat);
+    if (!categoryMap.has(slug)) {
+      categoryMap.set(slug, { name: cat, recipes: [] });
+    }
+    categoryMap.get(slug).recipes.push(recipe);
+  });
+
+  return Array.from(categoryMap.entries()).map(([slug, { name, recipes }]) => ({
+    params: { category: slug },
+    props: { name, recipes },
+  }));
+}
+
+const { name, recipes } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+recipes.sort((a, b) => a.data.title.localeCompare(b.data.title));
+---
+
+<Layout title={`Kategorie: ${name}`}>
+  <section class="container" style="padding: 3rem 1.5rem 4rem;">
+    <nav class="breadcrumb" style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--color-text-muted);">
+      <a href={`${baseUrl}/`}>Rezepte</a> &gt; <span>Kategorie: {name}</span>
+    </nav>
+
+    <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">{name} ({recipes.length})</h1>
+    <p style="color: var(--color-text-muted); margin-bottom: 2rem;">
+      Alle Rezepte in der Kategorie {name}.
+    </p>
+
+    <div class="recipe-grid">
+      {recipes.map(recipe => (
+        <RecipeCard 
+          title={recipe.data.title}
+          slug={recipe.slug}
+          category={recipe.data.category}
+          tags={recipe.data.tags}
+          servings={recipe.data.servings}
+          prepTime={recipe.data.prepTime}
+          cookTime={recipe.data.cookTime}
+          image={recipe.data.image}
+        />
+      ))}
+    </div>
+  </section>
+</Layout>
