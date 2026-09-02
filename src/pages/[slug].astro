@@ -1,0 +1,299 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+
+function slugifyTag(tag: string) {
+  return tag
+    .toLowerCase()
+    .trim()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function slugifyCategory(cat: string) {
+  return cat
+    .toLowerCase()
+    .trim()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export async function getStaticPaths() {
+  const recipes = await getCollection('recipes');
+  return recipes.map(recipe => ({
+    params: { slug: recipe.slug },
+    props: { recipe },
+  }));
+}
+
+const { recipe } = Astro.props;
+const { Content } = await recipe.render();
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const { title, category, tags, servings, servingsUnit, prepTime, cookTime, image, description } = recipe.data;
+const slug = recipe.slug;
+
+const categorySlug = slugifyCategory(category);
+const isGramsOrMl = (servingsUnit || '').toLowerCase().includes('g') || (servingsUnit || '').toLowerCase().includes('ml') || servings >= 100;
+
+// JSON-LD Schema.org for Google Recipe Search
+const schemaOrg = {
+  "@context": "https://schema.org/",
+  "@type": "Recipe",
+  "name": title,
+  "description": description || title,
+  "recipeCategory": category,
+  "recipeYield": `${servings} ${servingsUnit || 'Portionen'}`,
+  "prepTime": "PT15M",
+  "cookTime": "PT20M",
+  "keywords": tags.join(", ")
+};
+---
+
+<Layout title={title} description={description} image={image ? `${baseUrl}${image}` : undefined}>
+  <script type="application/ld+json" set:html={JSON.stringify(schemaOrg)} />
+
+  <article class="container recipe-detail-page" data-pagefind-body>
+    <div class="recipe-header">
+      <nav class="breadcrumb" style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--color-text-muted);">
+        <a href={`${baseUrl}/`}>Rezepte</a> &gt; 
+        <a href={`${baseUrl}/categories/${categorySlug}`}>{category}</a> &gt; 
+        <span data-pagefind-title>{title}</span>
+      </nav>
+
+      <h1 class="recipe-title" data-pagefind-title>{title}</h1>
+
+      <div class="tag-list" style="margin-bottom: 1rem;">
+        <span class="tag-badge" style="background: var(--color-primary); color: white;">{category}</span>
+        {tags.map(tag => (
+          <a href={`${baseUrl}/tags/${slugifyTag(tag)}`} class="tag-badge" data-pagefind-filter="tag">#{tag}</a>
+        ))}
+      </div>
+
+      <div class="recipe-meta-banner">
+        <div class="meta-item">
+          <span>⚖️</span>
+          <span>Basis: <strong>{servings} {servingsUnit || 'Portionen'}</strong></span>
+        </div>
+        <div class="meta-item">
+          <span>⏱️</span>
+          <span>Zubereitung: <strong>{prepTime || '15 Min'}</strong></span>
+        </div>
+        <div class="meta-item">
+          <span>🔥</span>
+          <span>Kochzeit: <strong>{cookTime || '20 Min'}</strong></span>
+        </div>
+        <button class="btn-serving" id="printBtn" style="margin-left: auto; width: auto; padding: 0 1rem; font-size: 0.9rem; font-weight: 600;" title="Rezept drucken">
+          🖨️ Drucken
+        </button>
+      </div>
+
+      {image && (
+        <div style="margin-top: 1.5rem; text-align: center;">
+          <img src={`${baseUrl}${image}`} alt={title} style="max-width: 100%; max-height: 420px; object-fit: cover; border-radius: var(--radius-md); box-shadow: var(--shadow-md);" />
+        </div>
+      )}
+    </div>
+
+    <div class="recipe-layout">
+      <!-- Ingredients Sidebar with Dynamic Scaler -->
+      <aside class="ingredients-card">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h2 style="font-size: 1.4rem;">Zutaten</h2>
+          <span style="font-size: 0.85rem; color: var(--color-text-muted);">Skalierbar</span>
+        </div>
+
+        <div class="servings-controller">
+          <button id="decServings" class="btn-serving" aria-label="Portionen verringern">-</button>
+          <span id="servingsDisplay" class="servings-display" data-base-servings={servings} data-unit={servingsUnit || 'Portionen'}>
+            {servings} {servingsUnit || 'Portionen'}
+          </span>
+          <button id="incServings" class="btn-serving" aria-label="Portionen erhöhen">+</button>
+        </div>
+
+        <!-- Presets -->
+        <div style="display: flex; gap: 0.4rem; margin-bottom: 1.25rem;">
+          {isGramsOrMl ? (
+            <>
+              <button class="preset-btn" data-multiplier="0.5">250g</button>
+              <button class="preset-btn active" data-multiplier="1">500g</button>
+              <button class="preset-btn" data-multiplier="1.5">750g</button>
+              <button class="preset-btn" data-multiplier="2">1000g</button>
+            </>
+          ) : (
+            <>
+              <button class="preset-btn" data-multiplier="0.5">0.5x</button>
+              <button class="preset-btn active" data-multiplier="1">1x</button>
+              <button class="preset-btn" data-multiplier="2">2x</button>
+              <button class="preset-btn" data-multiplier="3">3x</button>
+            </>
+          )}
+        </div>
+
+        <div class="ingredients-list-container">
+          <Content />
+        </div>
+      </aside>
+
+      <!-- Preparation Steps Checklist -->
+      <main class="instructions-content" id="recipeInstructions">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem; margin-bottom: 1rem;">
+          <span id="stepProgress" style="font-weight: 600; color: var(--color-primary); font-size: 0.95rem;">0 / 0 Schritte erledigt</span>
+          <button id="resetStepsBtn" style="background: none; border: none; color: var(--color-text-muted); text-decoration: underline; font-size: 0.85rem; cursor: pointer;">Schritte zurücksetzen</button>
+        </div>
+        <!-- Rendered markdown content -->
+      </main>
+    </div>
+  </article>
+
+  <style>
+    .preset-btn {
+      flex: 1;
+      padding: 0.3rem 0;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .preset-btn.active, .preset-btn:hover {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+  </style>
+
+  <script is:inline slug={slug}>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Dynamic Ingredient Scaling Logic
+      const baseServingsElem = document.getElementById('servingsDisplay');
+      if (!baseServingsElem) return;
+
+      const baseServings = parseFloat(baseServingsElem.getAttribute('data-base-servings') || '4');
+      const unit = baseServingsElem.getAttribute('data-unit') || 'Portionen';
+      const isLargeUnit = unit.toLowerCase().includes('g') || unit.toLowerCase().includes('ml') || baseServings >= 100;
+      const stepSize = isLargeUnit ? 50 : 1;
+
+      let currentServings = baseServings;
+
+      const decBtn = document.getElementById('decServings');
+      const incBtn = document.getElementById('incServings');
+      const presetBtns = document.querySelectorAll('.preset-btn');
+      const qtyElems = document.querySelectorAll('.qty');
+
+      function formatNumber(num) {
+        if (Math.abs(num - 0.25) < 0.01) return '1/4';
+        if (Math.abs(num - 0.33) < 0.02) return '1/3';
+        if (Math.abs(num - 0.5) < 0.01) return '1/2';
+        if (Math.abs(num - 0.66) < 0.02) return '2/3';
+        if (Math.abs(num - 0.75) < 0.01) return '3/4';
+        
+        if (Number.isInteger(num)) return num.toString();
+        if (num < 10) return num.toFixed(1).replace('.0', '');
+        return Math.round(num).toString();
+      }
+
+      function updateScaling() {
+        const factor = currentServings / baseServings;
+        baseServingsElem.textContent = `${currentServings} ${unit}`;
+
+        qtyElems.forEach(elem => {
+          const baseVal = parseFloat(elem.getAttribute('data-base') || '1');
+          const newVal = baseVal * factor;
+          elem.textContent = formatNumber(newVal);
+        });
+
+        presetBtns.forEach(btn => {
+          const mult = parseFloat(btn.getAttribute('data-multiplier') || '1');
+          if (Math.abs(mult - factor) < 0.05) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      decBtn?.addEventListener('click', () => {
+        if (currentServings > stepSize) {
+          currentServings -= stepSize;
+          updateScaling();
+        }
+      });
+
+      incBtn?.addEventListener('click', () => {
+        currentServings += stepSize;
+        updateScaling();
+      });
+
+      presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mult = parseFloat(btn.getAttribute('data-multiplier') || '1');
+          currentServings = Math.max(stepSize, Math.round(baseServings * mult));
+          updateScaling();
+        });
+      });
+
+      // 2. Interactive Step Checklist Logic (localStorage persistence)
+      const storageKey = `recipe-steps-${slug}`;
+      const instructionsContainer = document.getElementById('recipeInstructions');
+      const progressElem = document.getElementById('stepProgress');
+      const resetBtn = document.getElementById('resetStepsBtn');
+
+      if (instructionsContainer) {
+        const checkboxes = instructionsContainer.querySelectorAll('input[type="checkbox"]');
+        const savedState = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+        function updateProgress() {
+          const total = checkboxes.length;
+          let checkedCount = 0;
+          checkboxes.forEach((cb, idx) => {
+            const li = cb.closest('li');
+            if (cb.checked) {
+              checkedCount++;
+              li?.classList.add('step-completed');
+            } else {
+              li?.classList.remove('step-completed');
+            }
+          });
+          if (progressElem) {
+            progressElem.textContent = `${checkedCount} / ${total} Schritte erledigt`;
+          }
+        }
+
+        checkboxes.forEach((cb, idx) => {
+          if (savedState.includes(idx)) {
+            cb.checked = true;
+          }
+          cb.addEventListener('change', () => {
+            const currentChecked = Array.from(checkboxes)
+              .map((c, i) => c.checked ? i : null)
+              .filter(i => i !== null);
+            localStorage.setItem(storageKey, JSON.stringify(currentChecked));
+            updateProgress();
+          });
+        });
+
+        resetBtn?.addEventListener('click', () => {
+          checkboxes.forEach(cb => cb.checked = false);
+          localStorage.removeItem(storageKey);
+          updateProgress();
+        });
+
+        updateProgress();
+      }
+
+      document.getElementById('printBtn')?.addEventListener('click', () => window.print());
+    });
+  </script>
+</Layout>

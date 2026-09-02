@@ -1,0 +1,17 @@
+---
+import Layout from '../layouts/Layout.astro';
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+---
+
+<Layout title="404 - Seite nicht gefunden">
+  <div class="container" style="text-align: center; padding: 5rem 1rem;">
+    <h1 style="font-size: 4rem; margin-bottom: 1rem; color: var(--color-primary);">404</h1>
+    <h2>Rezept oder Seite nicht gefunden</h2>
+    <p style="color: var(--color-text-muted); margin: 1rem 0 2rem;">
+      Die gesuchte Seite existiert nicht oder wurde verschoben.
+    </p>
+    <a href={`${baseUrl}/`} class="filter-btn active" style="display: inline-block; text-decoration: none;">
+       Zurück zur Übersicht
+    </a>
+  </div>
+</Layout>
