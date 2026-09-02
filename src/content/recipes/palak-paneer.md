@@ -12,10 +12,11 @@ description: "Rezept für palak paneer."
 
 ## Zutaten
 
-- <span class="qty" data-base="350.0">350</span> g Spinat frisch oder auch TK-Spinat
-- <span class="qty" data-base="3.0">3</span> mittelgroße Tomaten
+- <span class="qty" data-base="350.0">350</span> g Spinat frisch oder auch TK-Spinat, idealerweise gehackt
+- <span class="qty" data-base="3.0">3</span> mittelgroße Tomaten (alt.: Tomatenmark)
 - <span class="qty" data-base="1.0">1</span> Zwiebel
 - <span class="qty" data-base="1.0">1</span> Knoblauchzehe
+- <span class="qty" data-base="1.0">1</span> optional: Linsen/Belugalinsen
 - ein Stück Ingwer daumendick
 - <span class="qty" data-base="50.0">50</span> ml Sahne (opt./substituieren)
 - Olivenöl
@@ -31,4 +32,11 @@ description: "Rezept für palak paneer."
 
 ## Zubereitung
 
-- [ ] Anstatt paneer einfach tofu oder halloumi o. Ä.
+- [ ] vegan: Anstatt paneer einfach tofu oder halloumi o. Ä.
+- [ ] vegan: Anstatt Sahne: Beliebige Nüsse/Saaten, bspw. hanfsaamen, cashew, walnuss, sonnenblumenkerne mit etwas wasser im mixer zerkleinern bis sahnige konsistenz.
+- [ ] Zwiebeln + Gewürze in Pfanne Anbraten bis zwiebeln glasig + gewürze aromatisch
+- [ ] Tomaten dazu
+- [ ] Spinat dazu
+- [ ] ggf. Brühe dazu
+- [ ] köcheln lassen
+- [ ] wenn gut durchgekocht, mit der Sahne "montieren"
